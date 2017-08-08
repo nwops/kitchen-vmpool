@@ -1,0 +1,90 @@
+#!/usr/bin/env ruby
+
+
+require 'resolv'
+require 'optparse'
+require 'yaml'
+require_relative 'vra_create'
+require_relative 'data_store'
+
+include VraUtilities
+
+def options
+  @options ||= {}
+end
+
+def create_pool(pool_data)
+  (1..pool_data['instances']).map {|num| submit_new_request(pool_data['payload_file']).id }
+end
+
+# return hostnames or false
+def resolve_vm_name(request)
+  r = client.requests.by_id(request)
+  return r.resources.map(&:name) if r.successful? and r.completed?
+  return false
+end
+
+def create_pools
+  pools.map do |key, value|
+    # convert the requests to vm names
+    pools[key]['requests'] = value['requests'].find_all do |req|
+       if hostnames = resolve_vm_name(req)  
+         pools[key]['pool_instances'] = value['pool_instances'] + hostnames
+         false
+       else
+         req
+       end
+    end
+   
+    # return the alive instances and save to the pool
+    pools[key]['pool_instances'] = pools[key]['pool_instances'].find_all {|h| is_alive?(h) }
+    
+    # create the pool, and save the request in the requests
+    unless value['pool_instances'].count >= value['instances']
+      reqs = create_pool(value) 
+      pools[key]['requests'] = reqs
+    end
+  end
+  write_data
+end
+
+# returns true / false if the hostname is still in dns
+def is_alive?(node)
+  begin
+    result = Resolv.getaddress(node)
+  rescue Resolv::ResolvError
+    result = false
+  end
+  result
+end
+
+def write_data
+  content = pools.to_yaml  
+  File.open(options[:pool_file], 'w') do |file|
+    file.write(content)   
+  end
+  update_snippet(project_id, content)
+  puts read_snippet
+end
+
+def pools
+   @pools ||= begin
+     YAML.load_file(options[:pool_file])
+   end
+end
+
+
+OptionParser.new do |opts|
+  opts.program_name = 'create-pool'
+  opts.on_head(<<-EOF
+
+Summary: A tool used to create a pool of vra systems
+  EOF
+  )
+  opts.on('-n', '--pool-file FILE', "Create the pools found in the given pool file") do |c|
+    options[:pool_file] = c
+    if File.exist?(options[:pool_file])
+      create_pools
+    end
+  end
+end.parse!
