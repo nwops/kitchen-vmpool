@@ -1,5 +1,5 @@
 require "bundler/setup"
-require "kitchen/vmpool"
+require "kitchen/driver/vmpool"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
