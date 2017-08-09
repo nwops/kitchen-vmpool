@@ -1,6 +1,10 @@
 require "bundler/setup"
 require "kitchen/driver/vmpool"
 
+def fixtures_dir
+  @fixtures_dir ||= File.join(File.dirname(__FILE__), 'fixtures')
+end
+
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"

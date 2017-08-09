@@ -7,8 +7,13 @@ module Kitchen
         attr_accessor :project_id, :snippet_id
         attr_reader :pool_file
 
+        # @option project_id [Integer] - the project id in gitlab
+        # @option snippet_id [Integer] - the snipppet id in the gitlab project
+        # @option pool_file [String] - the snipppet file name
         def initialize(options = nil)
-          options ||= { project_id: 89, snippet_id: 630, pool_file: 'vmpool.yaml'}
+          options ||= { project_id: nil, snippet_id: nil, pool_file: 'vmpool.yaml'}
+          raise ArgumentError.new("You must pass the project_id option") unless options[:project_id].to_i.positive?
+          raise ArgumentError.new("You must pass the snippet_id option") unless options[:snippet_id].to_i.positive?
           @snippet_id = options[:snippet_id]  #ie. 630
           @project_id = options[:project_id]  #ie. 89
           @pool_file = options[:pool_file]
@@ -26,21 +31,26 @@ module Kitchen
 
         def read
           puts "Reading snippet"
-          puts read_snippet
+          pool_content
         end
 
         def pool_data
-          YAML.load(pool_content)
+          @pool_data ||= YAML.load(pool_content)
+        end
+
+        def save
+          update_snippet
+          read
+        end
+
+        def pool_content
+          read_snippet
         end
 
         private
 
         def client
           @client ||= Gitlab.client
-        end
-
-        def pool_content
-          read_snippet
         end
 
         def snippet_exists?(project = project_id)
@@ -65,7 +75,7 @@ module Kitchen
             title: 'Virtual Machine Pools',
             visibility: 'public',
             file_name: pool_file,
-            code: pool_content
+            code: pool_data
            })
         end
 

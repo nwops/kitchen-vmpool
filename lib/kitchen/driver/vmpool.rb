@@ -17,12 +17,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-require "kitchen"
+require 'kitchen'
 require "kitchen/version"
-
+require 'kitchen/driver/base'
 module Kitchen
   module Driver
-    class Vmpool < Kitchen::Driver::SSHBase
+    class Vmpool < Kitchen::Driver::Base
       plugin_version "0.1.0"
 
       default_config :pool_name, 'pool1'
@@ -37,40 +37,74 @@ module Kitchen
 
       # (see Base#create)
       def create(state)
-        state[:hostname] = pool_member(config[:pool_name])
-        reset_instance(state)
+        state[:hostname] = pool_member
       end
 
       # (see Base#destroy)
       def destroy(state)
         return if state[:hostname].nil?
-        reset_instance(state)
+        mark_unused(state[:hostname])
         state.delete(:hostname)
       end
 
       private
 
-      def pool_member(pool_name)
-        pool_hosts
+      # @return [String] - a random host from the list of systems
+      def pool_member
+        sample = pool_hosts.sample
+        member = pool_hosts.delete(sample)
+        mark_used(member)
+        return member
       end
 
+      # @return Array[String] - a list of pool names
       def pool_names
         store.pool_data.keys
       end
 
+      # @return [Hash] - a pool hash by the given pool_name from the config
       def pool
-        store[config[:pool_name]]
+        name = config[:pool_name]
+        raise ArgumentError.new("Pool #{name} does not exist") unless pool_exists?(name)
+        store.pool_data[name]
       end
 
+      # @return [Boolean] - true if the pool exists
+      def pool_exists?(name)
+        pool_names.include?(name)
+      end
+
+      # @return Array[String] - a list of host names in the pool
       def pool_hosts
-        pool['instances']
+        pool['pool_instances']
       end
 
+      # @param name [String] - the hostname to mark not used
+      # @return Array[String] - list of unused instances
+      def mark_unused(name)
+        pool['pool_instances'] = [] unless pool['pool_instances']
+        pool['pool_instances'] << name
+        store.save
+        pool['pool_instances']
+      end
+
+      # @param name [String] - the hostname to mark used
+      # @return Array[String] - list of used instances
+      def mark_used(name)
+        pool['used_instances'] = [] unless pool['used_instances']
+        pool['used_instances'] << name
+        store.save
+        pool['used_instances']
+      end
+
+      # @return [Hash] - a store hash that contains one or more pools
       def store
         @store ||= begin
+          # load the store adapter and create a new instance of the store
           store = sprintf("%s%s", config[:state_store].capitalize, 'Store')
           require "kitchen/driver/vmpool_stores/#{config[:state_store]}_store"
           klass = Object.const_get("Kitchen::Driver::VmpoolStores::#{store}")
+          # create a new instance of the store with the provided options
           klass.send(:new, config[:store_options])
         end
       end

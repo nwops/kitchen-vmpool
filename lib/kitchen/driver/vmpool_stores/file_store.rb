@@ -7,7 +7,9 @@ module Kitchen
 
         attr_reader :pool_file
 
+        # @option pool_file [String] - the file path that holds the pool information
         def initialize(options = nil)
+          raise ArgumentError unless options[:pool_file]
           options ||= { pool_file: 'vmpool.yaml' }
           @pool_file = options[:pool_file]
         end
@@ -24,11 +26,16 @@ module Kitchen
 
         def read
           puts "Reading snippet"
-          puts read_content
+          read_content
+        end
+
+        def save
+          write_content
+          read
         end
 
         def pool_data
-          @pool_content ||= YAML.load(read_content)
+          @pool_data ||= YAML.load(read_content)
         end
 
         private
@@ -45,15 +52,14 @@ module Kitchen
           }
         end
 
-
-
         def read_content
-          File.read(pool_name)
+          data = File.read(pool_file)
+          raise ArgumentError unless data
+          data
         end
 
-
-
         def write_content(content = pool_data)
+          require 'pry'; binding.pry
           File.open(pool_file, 'w') { |f| f.write(content.to_yaml) }
         end
 
