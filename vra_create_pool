@@ -57,7 +57,8 @@ def create_pools
 
     # create the pool, and save the request in the requests
     # do not create if the number of systems and requests are more than the requested amount
-    unless value['pool_instances'].count >= (value['instances'] + pools[key]['requests'].count)
+    current_total = value['pool_instances'].count + pools[key]['requests'].count
+    unless current_total >= value['instances']
       reqs = create_pool(value)
       pools[key]['requests'] = reqs
     end
