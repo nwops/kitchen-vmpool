@@ -26,7 +26,7 @@ module Kitchen
     class PoolMemberNotFound < Exception; end
 
     class Vmpool < Kitchen::Driver::Base
-      plugin_version "0.1.0"
+      plugin_version "0.1.1"
 
       default_config :pool_name, 'pool1'
       default_config :pool_file, 'vmpool.yaml'
