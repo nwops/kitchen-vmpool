@@ -12,11 +12,11 @@ module Kitchen
         # @option pool_file [String] - the snipppet file name
         def initialize(options = nil)
           options ||= { project_id: nil, snippet_id: nil, pool_file: 'vmpool.yaml'}
-          raise ArgumentError.new("You must pass the project_id option") unless options[:project_id].to_i > 0
-          raise ArgumentError.new("You must pass the snippet_id option") unless options[:snippet_id].to_i > 0
-          @snippet_id = options[:snippet_id]  #ie. 630
-          @project_id = options[:project_id]  #ie. 89
-          @pool_file = options[:pool_file]
+          raise ArgumentError.new("You must pass the project_id option") unless options['project_id'].to_i > 0
+          raise ArgumentError.new("You must pass the snippet_id option") unless options['snippet_id'].to_i > 0
+          @snippet_id = options['snippet_id']  #ie. 630
+          @project_id = options['project_id']  #ie. 89
+          @pool_file = options['pool_file']
         end
 
         def update

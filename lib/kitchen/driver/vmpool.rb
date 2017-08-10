@@ -105,7 +105,12 @@ module Kitchen
           require "kitchen/driver/vmpool_stores/#{config[:state_store]}_store"
           klass = Object.const_get("Kitchen::Driver::VmpoolStores::#{store}")
           # create a new instance of the store with the provided options
-          klass.send(:new, config[:store_options])
+          store_opts = config[:store_options]
+          # convert everything key to strings 
+          store_opts.tap do |h|
+            h.keys.each { |k| h[k.to_s] = h.delete(k) }
+          end
+          klass.send(:new, store_opts)
         end
       end
 

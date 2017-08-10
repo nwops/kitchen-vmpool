@@ -9,9 +9,9 @@ module Kitchen
 
         # @option pool_file [String] - the file path that holds the pool information
         def initialize(options = nil)
-          raise ArgumentError unless options[:pool_file]
-          options ||= { pool_file: 'vmpool.yaml' }
-          @pool_file = options[:pool_file]
+          raise ArgumentError unless options['pool_file']
+          options ||= { 'pool_file' => 'vmpool.yaml' }
+          @pool_file = options['pool_file']
         end
 
         def update(content)
@@ -59,7 +59,6 @@ module Kitchen
         end
 
         def write_content(content = pool_data)
-          require 'pry'; binding.pry
           File.open(pool_file, 'w') { |f| f.write(content.to_yaml) }
         end
 
