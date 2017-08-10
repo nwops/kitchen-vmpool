@@ -98,7 +98,7 @@ module VraUtilities
     {
       cpus: 1,
       memory: 4096,
-      requested_for: 'someone@localhost'
+      requested_for: 'someone@localhost',
       lease_days: 2,
       additional_params: request_params,
       notes: 'Corey Test',
@@ -136,20 +136,20 @@ module VraUtilities
   require 'optparse'
 
   def run
-	options = {}
-	OptionParser.new do |opts|
-	  opts.program_name = 'vra-pool'
-	  opts.on_head(<<-EOF
+  	options = {}
+  	OptionParser.new do |opts|
+  	  opts.program_name = 'vra-pool'
+  	  opts.on_head(<<-EOF
 
-  Summary: A tool used to provision systems in VRA
-	  EOF
-	  )
-	  opts.on('-n', '--node-file FILE', "Load the request data from this file and create it") do |c|
-	    options[:node_file] = c
-	    @payload_file = c
-	    submit_new_request if File.exist?(@payload_file) # create the request
-	  end
-	end.parse!
+    Summary: A tool used to provision systems in VRA
+  	  EOF
+  	  )
+  	  opts.on('-n', '--node-file FILE', "Load the request data from this file and create it") do |c|
+  	    options[:node_file] = c
+  	    @payload_file = c
+  	    submit_new_request if File.exist?(@payload_file) # create the request
+  	  end
+  	end.parse!
   end
 end
 

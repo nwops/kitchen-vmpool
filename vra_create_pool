@@ -101,8 +101,10 @@ end
 
 # @return [Boolean] - true if options are valid
 def valid_options?
-  File.exist?(options[:pool_file]) && options[:project_id].to_i.positive? &&
-  options[:snippet_id].to_i.positive?
+  options['pool_file'] &&
+  File.exist?(options['pool_file']) &&
+  options['project_id'].to_i > 0 &&
+  options['snippet_id'].to_i > 0
 end
 
 ## main entry point
@@ -122,13 +124,13 @@ Summary: A tool used to create a pool of vra systems
   EOF
   )
   opts.on('-f', '--pool-file FILE', "Create the pools found in the given pool file") do |c|
-    options[:pool_file] = c
+    options['pool_file'] = c
   end
   opts.on('-p', '--project-id ID', "The gitlab project id") do |c|
-    options[:project_id] = c.to_i
+    options['project_id'] = c.to_i
   end
   opts.on('-s', '--snippet-id ID', "The gitlab project snippet id") do |c|
-    options[:snippet_id] = c.to_i
+    options['snippet_id'] = c.to_i
   end
 
 end.parse!
@@ -137,6 +139,6 @@ end.parse!
 if valid_options?
   create_pools
 else
-  puts "Invalid options"
+  puts "Invalid options: #{options.inspect}"
   exit 1
 end
