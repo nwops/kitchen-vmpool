@@ -56,7 +56,8 @@ def create_pools
     pools[key]['pool_instances'] = pools[key]['pool_instances'].find_all {|h| is_alive?(h) }
 
     # create the pool, and save the request in the requests
-    unless value['pool_instances'].count >= value['instances']
+    # do not create if the number of systems and requests are more than the requested amount
+    unless value['pool_instances'].count >= (value['instances'] + pools[key]['requests'].count)
       reqs = create_pool(value)
       pools[key]['requests'] = reqs
     end
@@ -71,16 +72,20 @@ end
 
 # @return [Boolean] - true if the host is listening on 22, false otherwise
 def ssh_is_alive?(node)
+  puts "Checking if #{node} has ssh alive"
   begin
       Timeout::timeout(3) { TCPSocket.new(node, 22) }
       puts "Responded!!"
       return true
+  rescue Errno::ECONNREFUSED
+       puts "Connection refused"
+      return false
   rescue SocketError
       puts "No connection!!"
-      return true
+      return false
   rescue Timeout::Error
       puts "No connection, timed out!!"
-      return true
+      return false
   end
 end
 

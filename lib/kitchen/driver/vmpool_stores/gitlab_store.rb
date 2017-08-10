@@ -75,7 +75,7 @@ module Kitchen
             title: 'Virtual Machine Pools',
             visibility: 'public',
             file_name: pool_file,
-            code: pool_data
+            code: pool_data.to_yaml
            })
         end
 
