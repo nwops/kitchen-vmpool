@@ -19,6 +19,7 @@ RSpec.describe Kitchen::Driver::Vmpool do
       store_options: {
         pool_file: File.join(fixtures_dir, 'vmpool.yaml')
       },
+      :create_command => nil,
       :state_store=> 'file',
       :destroy_command=>nil
     }

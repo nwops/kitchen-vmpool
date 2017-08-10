@@ -5,12 +5,18 @@ require 'resolv'
 require 'optparse'
 require 'yaml'
 require_relative 'vra_create'
-require_relative 'data_store'
+require 'kitchen/driver/vmpool_stores/gitlab_store'
+require 'socket'
+require 'timeout'
 
 include VraUtilities
 
+# @return [Hash] - hash of config options
+# reads from vmpool_config.yaml file if exists
 def options
-  @options ||= {}
+  @options ||= begin
+    opts = File.exist?('vmpool_config.yaml') ? YAML.load_file('vmpool_config.yaml') : {}
+  end
 end
 
 def create_pool(pool_data)
@@ -24,32 +30,62 @@ def resolve_vm_name(request)
   return false
 end
 
+# @return [Hash] - a store hash that contains one or more pools
+# @option project_id [Integer] - the project id in gitlab
+# @option snippet_id [Integer] - the snipppet id in the gitlab project
+# @option pool_file [String] - the snipppet file name
+def store(store_options = options)
+  # create a new instance of the store with the provided options
+  @store ||= Kitchen::Driver::VmpoolStores::GitlabStore.new(store_options)
+end
+
+# creates the number of instances defined in the pool data
 def create_pools
   pools.map do |key, value|
     # convert the requests to vm names
     pools[key]['requests'] = value['requests'].find_all do |req|
-       if hostnames = resolve_vm_name(req)  
+       if hostnames = resolve_vm_name(req)
          pools[key]['pool_instances'] = value['pool_instances'] + hostnames
          false
        else
          req
        end
     end
-   
+
     # return the alive instances and save to the pool
     pools[key]['pool_instances'] = pools[key]['pool_instances'].find_all {|h| is_alive?(h) }
-    
+
     # create the pool, and save the request in the requests
     unless value['pool_instances'].count >= value['instances']
-      reqs = create_pool(value) 
+      reqs = create_pool(value)
       pools[key]['requests'] = reqs
     end
   end
-  write_data
+  store.save
 end
 
-# returns true / false if the hostname is still in dns
+# @return [Boolean] - true if the host is alive and listening
 def is_alive?(node)
+  has_dns_record?(node) && ssh_is_alive?(node)
+end
+
+# @return [Boolean] - true if the host is listening on 22, false otherwise
+def ssh_is_alive?(node)
+  begin
+      Timeout::timeout(3) { TCPSocket.new(node, 22) }
+      puts "Responded!!"
+      return true
+  rescue SocketError
+      puts "No connection!!"
+      return true
+  rescue Timeout::Error
+      puts "No connection, timed out!!"
+      return true
+  end
+end
+
+# @return [Boolean] - true if the host is still in dns, false otherwise
+def has_dns_record?(node)
   begin
     result = Resolv.getaddress(node)
   rescue Resolv::ResolvError
@@ -58,33 +94,49 @@ def is_alive?(node)
   result
 end
 
-def write_data
-  content = pools.to_yaml  
-  File.open(options[:pool_file], 'w') do |file|
-    file.write(content)   
-  end
-  update_snippet(project_id, content)
-  puts read_snippet
-end
-
+# @return [Hash] - returns a hash of all the pools
 def pools
-   @pools ||= begin
-     YAML.load_file(options[:pool_file])
-   end
+   @pools ||= store.pool_data
 end
 
+# @return [Boolean] - true if options are valid
+def valid_options?
+  File.exist?(options[:pool_file]) && options[:project_id].to_i.positive? &&
+  options[:snippet_id].to_i.positive?
+end
+
+## main entry point
 
 OptionParser.new do |opts|
   opts.program_name = 'create-pool'
   opts.on_head(<<-EOF
 
 Summary: A tool used to create a pool of vra systems
+
+  Example:
+     #{__FILE__} -f pool_file.yaml -p 33 -s 103
+
+  If you wish to store the config in a file, this script will read vmpool_config.yaml
+  for the same configs.
+
   EOF
   )
-  opts.on('-n', '--pool-file FILE', "Create the pools found in the given pool file") do |c|
+  opts.on('-f', '--pool-file FILE', "Create the pools found in the given pool file") do |c|
     options[:pool_file] = c
-    if File.exist?(options[:pool_file])
-      create_pools
-    end
   end
+  opts.on('-p', '--project-id ID', "The gitlab project id") do |c|
+    options[:project_id] = c.to_i
+  end
+  opts.on('-s', '--snippet-id ID', "The gitlab project snippet id") do |c|
+    options[:snippet_id] = c.to_i
+  end
+
 end.parse!
+
+
+if valid_options?
+  create_pools
+else
+  puts "Invalid options"
+  exit 1
+end

@@ -6,6 +6,7 @@ require 'openssl'
 require 'json'
 require 'yaml'
 
+# Purpose: Submits a single request to VRA for vm creation
 module Vra
   class Client
     # monkey patch the init method to accept token
@@ -22,7 +23,7 @@ module Vra
     end
   end
 
-  # monkey patch the init method to accept additional params 
+  # monkey patch the init method to accept additional params
   class CatalogRequest
     def initialize(client, catalog_id, opts = {})
       @client            = client
@@ -61,18 +62,18 @@ module VraUtilities
   end
 
   def subtenant_id
-    ENV['VRA_SUB_TENANT_ID'] 
+    ENV['VRA_SUB_TENANT_ID']
   end
 
-  def vra_user 
+  def vra_user
     @vra_user ||= ENV['VRA_USER'] || ask('Enter User: ') {|q| q.echo = true}
   end
 
-  def vra_pass 
+  def vra_pass
     @vra_pass ||= ENV['VRA_PASS'] || ask('Enter VRA Password: ') {|q| q.echo = 'x'}
   end
 
-  def base_url 
+  def base_url
     @server ||= ENV['VRA_URL']
   end
 
@@ -95,14 +96,14 @@ module VraUtilities
 
   def request_options
     {
-      cpus: 1, 
+      cpus: 1,
       memory: 4096,
       requested_for: 'someone@localhost'
       lease_days: 2,
       additional_params: request_params,
       notes: 'Corey Test',
       subtenant_id: request_data['organization']['subtenantRef']
-    }    
+    }
   end
 
   def request_data
@@ -117,7 +118,7 @@ module VraUtilities
     unless @request_params
       @request_params = Vra::RequestParameters.new
       parameters.each { |p| @request_params.set(*p)}
-    end 
+    end
     @request_params
   end
 
@@ -140,13 +141,13 @@ module VraUtilities
 	  opts.program_name = 'vra-pool'
 	  opts.on_head(<<-EOF
 
-  Summary: A tool used to provision systems in VRA  
+  Summary: A tool used to provision systems in VRA
 	  EOF
 	  )
 	  opts.on('-n', '--node-file FILE', "Load the request data from this file and create it") do |c|
-	    options[:node_file] = c 
-	    @payload_file = c 
-	    submit_new_request if File.exist?(@payload_file) # create the request     
+	    options[:node_file] = c
+	    @payload_file = c
+	    submit_new_request if File.exist?(@payload_file) # create the request
 	  end
 	end.parse!
   end
