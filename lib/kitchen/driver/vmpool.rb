@@ -32,8 +32,8 @@ module Kitchen
       default_config :pool_file, 'vmpool.yaml'
       default_config :state_store, 'file'
       default_config :store_options, {}
-
-      required_config :create_command
+      default_config :reuse_instances, false
+      default_config :create_command, nil
       default_config :destroy_command, nil
 
       no_parallel_for :create, :destroy
@@ -80,7 +80,11 @@ module Kitchen
 
       # @return Array[String] - a list of host names in the pool
       def pool_hosts
-        pool['pool_instances']
+        if config[:reuse_instances]
+          pool['pool_instances'] + pool['used_instances'].to_a
+        else
+          pool['pool_instances']
+        end
       end
 
       # @param name [String] - the hostname to mark not used
