@@ -22,6 +22,9 @@ require "kitchen/version"
 require 'kitchen/driver/base'
 module Kitchen
   module Driver
+
+    class PoolMemberNotFound < Exception; end
+
     class Vmpool < Kitchen::Driver::Base
       plugin_version "0.1.0"
 
@@ -52,6 +55,7 @@ module Kitchen
       # @return [String] - a random host from the list of systems
       def pool_member
         sample = pool_hosts.sample
+        raise PoolMemberNotFound.new("No pool members exist for #{config[:pool_name]}, please create some pool members") unless sample
         member = pool_hosts.delete(sample)
         mark_used(member)
         return member
@@ -106,7 +110,7 @@ module Kitchen
           klass = Object.const_get("Kitchen::Driver::VmpoolStores::#{store}")
           # create a new instance of the store with the provided options
           store_opts = config[:store_options]
-          # convert everything key to strings 
+          # convert everything key to strings
           store_opts.tap do |h|
             h.keys.each { |k| h[k.to_s] = h.delete(k) }
           end

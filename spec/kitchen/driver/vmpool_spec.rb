@@ -59,6 +59,27 @@ RSpec.describe Kitchen::Driver::Vmpool do
       expect(vmpool.destroy({hostname: 'vm1'})).to eq('vm1')
     end
 
+    describe 'empty pool' do
+      let(:driver_config) do
+        {
+          :pool_name=>"pool1",
+          store_options: {
+            pool_file: File.join(fixtures_dir, 'empty_vmpool.yaml')
+          },
+          :state_store=>"file",
+          :destroy_command=>nil
+        }
+      end
+
+      it 'create' do
+        expect{vmpool.create(state)}.to raise_error(Kitchen::Driver::PoolMemberNotFound)
+      end
+
+      it 'destroy' do
+        expect(vmpool.destroy({hostname: nil})).to be_nil
+      end
+    end
+
   end
 
   describe 'gitlab' do
