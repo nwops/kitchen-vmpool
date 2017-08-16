@@ -2,7 +2,6 @@ require "spec_helper"
 require 'kitchen/driver/vmpool'
 require 'kitchen/driver/vmpool_stores/file_store'
 require 'kitchen/driver/vmpool_stores/gitlab_store'
-
 RSpec.describe Kitchen::Driver::Vmpool do
 
   let(:vmpool) do
@@ -11,6 +10,29 @@ RSpec.describe Kitchen::Driver::Vmpool do
 
   let(:store) do
     vmpool.send(:store)
+  end
+
+  def pool_data
+    pool_name = driver_config[:pool_name]
+    store.pool_data(false)[pool_name]
+  end
+
+  # let(:pool_data) do
+
+  # end
+  #
+  # let(:used_instances) do
+  #   pool_data["used_instances"]
+  # end
+  #
+  # let(:pool_instances) do
+  #   pool_data["pool_instances"]
+  # end
+
+  let(:state) do
+    {
+
+    }
   end
 
   before(:each) do
@@ -45,23 +67,59 @@ RSpec.describe Kitchen::Driver::Vmpool do
       }
     end
 
-    let(:state) do
-      {
-
-      }
-    end
-
     it 'create a file based store' do
       expect(vmpool.send(:store)).to be_a Kitchen::Driver::VmpoolStores::FileStore
     end
 
-    it 'create' do
-      expect(vmpool.create(state)).to match(/vm\d/)
+    it 'create returns a vm' do
+      member = vmpool.create(state)
+      expect(member).to match(/vm\d/)
     end
 
-    it 'destroy' do
-      expect(vmpool.destroy({hostname: 'vm1'})).to eq('vm1')
+    it 'removes from pool instances' do
+      before = pool_data['pool_instances'].count
+      member = vmpool.create(state)
+      expect(pool_data['pool_instances'].count).to be < before
     end
+
+    it 'adds to used instances' do
+      before = (pool_data['used_instances'] || []).count
+      member = vmpool.create(state)
+      expect(pool_data['used_instances'].count).to be > before
+    end
+
+    it 'destroy and not resuable' do
+      member = vmpool.create(state)
+      expect(pool_data['pool_instances']).to_not include(member)
+      driver_config.merge({reuse_instances: false})
+      vmpool.destroy({hostname: member})
+      expect(pool_data['pool_instances']).to_not include(member)
+      expect(pool_data['used_instances']).to include(member)
+    end
+
+    describe 'reusable' do
+
+      let(:driver_config) do
+        {
+            :pool_name=>"pool1",
+            store_options: {
+                pool_file: File.join(fixtures_dir, 'vmpool.yaml')
+            },
+            :state_store=>"file",
+            :destroy_command=>nil,
+            reuse_instances: true
+        }
+      end
+
+      it 'destroy and resuable' do
+        member = vmpool.create(state)
+        vmpool.destroy({hostname: member})
+        expect(pool_data['used_instances']).to_not include(member)
+        expect(pool_data['pool_instances']).to include(member)
+      end
+
+    end
+
 
     describe 'empty pool' do
       let(:driver_config) do
@@ -93,11 +151,13 @@ RSpec.describe Kitchen::Driver::Vmpool do
           },
           :reuse_instances => true,
           :state_store=>"file",
-          :destroy_command=>nil
+          :destroy_command=>nil,
+          reuse_instances: true
         }
       end
 
       it 'create' do
+        vmpool.destroy({hostname: 'vm4'})
         expect(vmpool.create(state)).to match(/vm4/)
       end
 

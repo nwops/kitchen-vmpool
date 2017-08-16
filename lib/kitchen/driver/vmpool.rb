@@ -19,6 +19,7 @@
 #
 require 'kitchen'
 require "kitchen/version"
+require 'kitchen/logging'
 require 'kitchen/driver/base'
 module Kitchen
   module Driver
@@ -26,6 +27,8 @@ module Kitchen
     class PoolMemberNotFound < Exception; end
 
     class Vmpool < Kitchen::Driver::Base
+      include Kitchen::Logging
+
       plugin_version "0.1.1"
 
       default_config :pool_name, 'pool1'
@@ -40,7 +43,7 @@ module Kitchen
 
       # (see Base#create)
       def create(state)
-        state[:hostname] = pool_member
+        state[:hostname] = take_pool_member
       end
 
       # (see Base#destroy)
@@ -53,11 +56,12 @@ module Kitchen
       private
 
       # @return [String] - a random host from the list of systems
-      def pool_member
-        sample = pool_hosts.sample
-        raise PoolMemberNotFound.new("No pool members exist for #{config[:pool_name]}, please create some pool members") unless sample
-        member = pool_hosts.delete(sample)
+      # mark them used so nobody else can use it
+      def take_pool_member
+        member = pool_hosts.sample
+        raise PoolMemberNotFound.new("No pool members exist for #{config[:pool_name]}, please create some pool members") unless member
         mark_used(member)
+        info("Pool member #{member} was selected")
         return member
       end
 
@@ -80,29 +84,36 @@ module Kitchen
 
       # @return Array[String] - a list of host names in the pool
       def pool_hosts
-        if config[:reuse_instances]
-          (pool['pool_instances'] + pool['used_instances'].to_a).uniq
-        else
-          pool['pool_instances']
-        end
+        pool['pool_instances'] ||= []
+      end
+
+      # @return Array[String] - a list of used host names in the pool
+      def used_hosts
+        pool['used_instances'] ||= []
       end
 
       # @param name [String] - the hostname to mark not used
       # @return Array[String] - list of unused instances
       def mark_unused(name)
-        pool['pool_instances'] = [] unless pool['pool_instances']
-        pool['pool_instances'] << name
+        if config[:reuse_instances]
+          info("Marking pool member #{name} as unused")
+          used_hosts.delete(name)
+          pool_hosts << name unless pool_hosts.include?(name)
+        end
         store.save
-        pool['pool_instances']
+        pool_hosts
       end
 
       # @param name [String] - the hostname to mark used
       # @return Array[String] - list of used instances
       def mark_used(name)
-        pool['used_instances'] = [] unless pool['used_instances']
-        pool['used_instances'] << name
+        debug("Marking pool member #{name} as used")
+        # ideally the member should not already be in this array
+        # but just in case we will protect against that
+        pool_hosts.delete(name)
+        used_hosts << name unless used_hosts.include?(name)
         store.save
-        pool['used_instances']
+        used_hosts
       end
 
       # @return [Hash] - a store hash that contains one or more pools

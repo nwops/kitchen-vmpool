@@ -107,8 +107,6 @@ end
 
 # @return [Boolean] - true if options are valid
 def valid_options?
-  options['pool_file'] &&
-  File.exist?(options['pool_file']) &&
   options['project_id'].to_i > 0 &&
   options['snippet_id'].to_i > 0
 end

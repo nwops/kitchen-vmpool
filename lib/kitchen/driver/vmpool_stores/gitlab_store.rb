@@ -15,33 +15,28 @@ module Kitchen
         def initialize(options = nil)
           options ||= { project_id: nil, snippet_id: nil, pool_file: 'vmpool.yaml'}
           raise ArgumentError.new("You must pass the project_id option") unless options['project_id'].to_i > 0
-          raise ArgumentError.new("You must pass the snippet_id option") unless options['snippet_id'].to_i > 0
           @snippet_id = options['snippet_id']  #ie. 630
           @project_id = options['project_id']  #ie. 89
           @pool_file = options['pool_file']
         end
 
         def update(content = nil)
+          info("Updating vmpool data")
           update_snippet
           read
         end
 
         def create
-          create_snippet
+          info("Creating new vmpool data snippet")
+          snippet = create_snippet
+          @snippet_id = snippet.id
           read
-        end
-
-        def pool_data
-          @pool_data ||= YAML.load(read_content)
         end
 
         def save
+          info("Saving vmpool data")
           update_snippet
           read
-        end
-
-        def read_content
-          read_snippet
         end
 
         private
@@ -51,11 +46,12 @@ module Kitchen
         end
 
         def snippet_exists?(project = project_id)
+          return false unless snippet_id
           client.snippets(project, {
             title: 'Virtual Machine Pools',
             visibility: 'public',
             file_name: pool_file,
-            code: read_content})
+            code: {}.to_yaml})
         end
 
         def create_snippet(project = project_id)
@@ -63,7 +59,7 @@ module Kitchen
             title: 'Virtual Machine Pools',
             visibility: 'public',
             file_name: pool_file,
-            code: read_content
+            code: {}.to_yaml
             })
         end
 
@@ -80,7 +76,7 @@ module Kitchen
           client.snippets(project).map {|s| s.id }
         end
 
-        def read_snippet(project = project_id, id = snippet_id)
+        def read_content(project = project_id, id = snippet_id)
           client.snippet_content(project, id)
         end
 
