@@ -9,6 +9,10 @@ RSpec.describe Kitchen::Driver::Vmpool do
     Kitchen::Driver::Vmpool.new(driver_config)
   end
 
+  let(:store) do
+    vmpool.send(:store)
+  end
+
   before(:each) do
     allow_any_instance_of(Kitchen::Driver::VmpoolStores::FileStore).to receive(:save).and_return(true)
   end
@@ -131,7 +135,7 @@ RSpec.describe Kitchen::Driver::Vmpool do
       allow_any_instance_of(Kitchen::Driver::VmpoolStores::GitlabStore).to receive(:save).and_return(true)
       allow_any_instance_of(Kitchen::Driver::VmpoolStores::GitlabStore).to receive(:create).and_return(data)
       allow_any_instance_of(Kitchen::Driver::VmpoolStores::GitlabStore).to receive(:update).and_return(data)
-      allow_any_instance_of(Kitchen::Driver::VmpoolStores::GitlabStore).to receive(:pool_content).and_return(data)
+      allow_any_instance_of(Kitchen::Driver::VmpoolStores::GitlabStore).to receive(:read_content).and_return(data)
       allow_any_instance_of(Kitchen::Driver::VmpoolStores::GitlabStore)
        .to receive(:read).and_return(File.read(file))
 

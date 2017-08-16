@@ -1,41 +1,15 @@
 require 'yaml'
-
+require "kitchen/driver/vmpool_stores/base_store"
 module Kitchen
   module Driver
     module VmpoolStores
-      class FileStore
-
-        attr_reader :pool_file
+      class FileStore < BaseStore
 
         # @option pool_file [String] - the file path that holds the pool information
         def initialize(options = nil)
           raise ArgumentError unless options['pool_file']
           options ||= { 'pool_file' => 'vmpool.yaml' }
           @pool_file = options['pool_file']
-        end
-
-        def update(content)
-          write_content(content)
-          read
-        end
-
-        def create
-          write_content(base_content)
-          read
-        end
-
-        def read
-          puts "Reading snippet"
-          read_content
-        end
-
-        def save
-          write_content
-          read
-        end
-
-        def pool_data
-          @pool_data ||= YAML.load(read_content)
         end
 
         private

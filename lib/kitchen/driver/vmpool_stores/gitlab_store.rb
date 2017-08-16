@@ -1,8 +1,10 @@
 require 'gitlab'
+require "kitchen/driver/vmpool_stores/base_store"
+require 'yaml'
 module Kitchen
   module Driver
     module VmpoolStores
-      class GitlabStore
+      class GitlabStore < BaseStore
 
         attr_accessor :project_id, :snippet_id
         attr_reader :pool_file
@@ -19,7 +21,7 @@ module Kitchen
           @pool_file = options['pool_file']
         end
 
-        def update
+        def update(content = nil)
           update_snippet
           read
         end
@@ -29,13 +31,8 @@ module Kitchen
           read
         end
 
-        def read
-          puts "Reading snippet"
-          pool_content
-        end
-
         def pool_data
-          @pool_data ||= YAML.load(pool_content)
+          @pool_data ||= YAML.load(read_content)
         end
 
         def save
@@ -43,7 +40,7 @@ module Kitchen
           read
         end
 
-        def pool_content
+        def read_content
           read_snippet
         end
 
@@ -58,7 +55,7 @@ module Kitchen
             title: 'Virtual Machine Pools',
             visibility: 'public',
             file_name: pool_file,
-            code: pool_content})
+            code: read_content})
         end
 
         def create_snippet(project = project_id)
@@ -66,7 +63,7 @@ module Kitchen
             title: 'Virtual Machine Pools',
             visibility: 'public',
             file_name: pool_file,
-            code: pool_content
+            code: read_content
             })
         end
 

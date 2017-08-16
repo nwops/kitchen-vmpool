@@ -81,7 +81,7 @@ module Kitchen
       # @return Array[String] - a list of host names in the pool
       def pool_hosts
         if config[:reuse_instances]
-          pool['pool_instances'] + pool['used_instances'].to_a
+          (pool['pool_instances'] + pool['used_instances'].to_a).uniq
         else
           pool['pool_instances']
         end
