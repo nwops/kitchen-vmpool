@@ -32,8 +32,7 @@ module Kitchen
       plugin_version "0.1.1"
 
       default_config :pool_name, 'pool1'
-      default_config :pool_file, 'vmpool.yaml'
-      default_config :state_store, 'file'
+fg      default_config :state_store, 'file'
       default_config :store_options, {}
       default_config :reuse_instances, false
       default_config :create_command, nil
@@ -120,8 +119,10 @@ module Kitchen
       def store
         @store ||= begin
           # load the store adapter and create a new instance of the store
-          store = sprintf("%s%s", config[:state_store].capitalize, 'Store')
-          require "kitchen/driver/vmpool_stores/#{config[:state_store]}_store"
+          name = config[:state_store].split('_').map(&:capitalize).join('')
+          store = sprintf("%s%s", name, 'Store')
+          store_file = "#{config[:state_store]}_store"
+          require "kitchen/driver/vmpool_stores/#{store_file}"
           klass = Object.const_get("Kitchen::Driver::VmpoolStores::#{store}")
           # create a new instance of the store with the provided options
           store_opts = config[:store_options]
@@ -133,6 +134,27 @@ module Kitchen
         end
       end
 
+    end
+  end
+end
+
+require 'gitlab'
+# monkey patch error in error code until it is fixed upstream
+module Gitlab
+  module Error
+    class ResponseError
+      # Human friendly message.
+      #
+      # @return [String]
+      private
+      def build_error_message
+        parsed_response = @response.parsed_response
+        message = parsed_response.respond_to?(:message) ? parsed_response.message : parsed_response['message']
+        message = parsed_response.error unless message
+        "Server responded with code #{@response.code}, message: " \
+        "#{handle_message(message)}. " \
+        "Request URI: #{@response.request.base_uri}#{@response.request.path}"
+      end
     end
   end
 end

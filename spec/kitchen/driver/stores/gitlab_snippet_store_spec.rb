@@ -6,10 +6,12 @@ RSpec.describe 'snippet store' do
     {
         :pool_name=>"pool1",
         store_options: {
+            snippet_id: '1',
+            project_id:  '3941728',
             pool_file: File.join(fixtures_dir, 'vmpool.yaml')
         },
         :create_command => nil,
-        :state_store=> 'file',
+        :state_store=> 'gitlab_snippet',
         :destroy_command=>nil
     }
   end
@@ -23,6 +25,6 @@ RSpec.describe 'snippet store' do
   end
 
   it '#new' do
-    expect(store).to be_a(Kitchen::Driver::VmpoolStores::FileStore)
+    expect(store).to be_a(Kitchen::Driver::VmpoolStores::GitlabSnippetStore)
   end
 end

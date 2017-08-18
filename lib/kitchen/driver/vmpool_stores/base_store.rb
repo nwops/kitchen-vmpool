@@ -1,4 +1,6 @@
 require 'yaml'
+require 'kitchen/logger'
+require 'kitchen'
 require 'kitchen/logging'
 
 module Kitchen
@@ -9,19 +11,19 @@ module Kitchen
         include Kitchen::Logging
 
         def update(content = nil)
-          info("Updating vmpool data")
+          #info("Updating vmpool data")
           write_content(content)
           read
         end
 
         def create
-          info("Creating new vmpool data")
+          #info("Creating new vmpool data")
           write_content(base_content)
           read
         end
 
         def read
-          info("Reading vmpool data")
+          #info("Reading vmpool data")
           read_content
         end
 
@@ -30,7 +32,7 @@ module Kitchen
         end
 
         def save
-          info("Saving vmpool data")
+          #info("Saving vmpool data")
           write_content
           read
         end
