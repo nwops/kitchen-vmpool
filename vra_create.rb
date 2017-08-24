@@ -77,6 +77,17 @@ module VraUtilities
     @server ||= ENV['VRA_URL']
   end
 
+  # @return [Hash] - the the hash value of the key_name found in the request data payload
+  def data_item(key_name)
+    request_data["requestData"]['entries'].find {|e| e["key"] == key_name }
+  end
+
+  # @return [String] - the value of the key_name found in the request data payload
+  def data_item_value(key_name)
+    item = data_item(key_name)
+    return item if item.nil?
+    item["value"]["value"]
+  end
 
   # @return [VRA::Client] - creates a new client object and returns it
   def client
@@ -96,12 +107,12 @@ module VraUtilities
 
   def request_options
     {
-      cpus: 1,
-      memory: 4096,
-      requested_for: 'someone@localhost',
+      cpus: data_item_value("provider-VirtualMachine.CPU.Count") || 1,
+      memory: data_item_value("provider-VirtualMachine.Memory.Size") || 4096,
+      requested_for: ENV['VRA_USER'] || data_item_value("requestedFor"),
       lease_days: 2,
       additional_params: request_params,
-      notes: 'Corey Test',
+      notes: 'VRA Server Pool Test',
       subtenant_id: request_data['organization']['subtenantRef']
     }
   end
@@ -136,8 +147,8 @@ module VraUtilities
   require 'optparse'
 
   def run
-  	options = {}
-  	OptionParser.new do |opts|
+  	cli_options = {}
+  	o = OptionParser.new do |opts|
   	  opts.program_name = 'vra-pool'
   	  opts.on_head(<<-EOF
 
@@ -145,11 +156,10 @@ module VraUtilities
   	  EOF
   	  )
   	  opts.on('-n', '--node-file FILE', "Load the request data from this file and create it") do |c|
-  	    options[:node_file] = c
-  	    @payload_file = c
-  	    submit_new_request if File.exist?(@payload_file) # create the request
+  	    cli_options[:node_file] = c
   	  end
   	end.parse!
+   submit_new_request(cli_options[:node_file]) if File.exist?(cli_options[:node_file]) # create the request
   end
 end
 

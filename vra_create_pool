@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 
-
+require 'hashdiff'
 require 'resolv'
 require 'optparse'
 require 'yaml'
 require_relative 'vra_create'
-require 'kitchen/driver/vmpool_stores/gitlab_store'
+require 'kitchen/driver/vmpool_stores/gitlab_commit_store'
 require 'socket'
 require 'timeout'
 
@@ -20,34 +20,62 @@ def options
 end
 
 def create_pool(pool_data)
-  (1..pool_data['instances']).map {|num| submit_new_request(pool_data['payload_file']).id }
+  (1..pool_data['instances']).map do |num| 
+     puts pool_data['payload_file']
+     submit_new_request(pool_data['payload_file']).id 
+  end
 end
 
 # return hostnames or false
+# @param [VRA::Request] - a request object
 def resolve_vm_name(request)
-  r = client.requests.by_id(request)
+  r = request 
   return r.resources.map(&:name) if r.successful? and r.completed?
   return false
 end
 
+def req_obj(id)
+  client.requests.by_id(id)
+end
+
+# compares the before and after state of the store hashes
+def store_changed?(before, after)
+  HashDiff.diff(before, after).count > 0
+end
+
 # @return [Hash] - a store hash that contains one or more pools
 # @option project_id [Integer] - the project id in gitlab
-# @option snippet_id [Integer] - the snipppet id in the gitlab project
 # @option pool_file [String] - the snipppet file name
 def store(store_options = options)
   # create a new instance of the store with the provided options
-  @store ||= Kitchen::Driver::VmpoolStores::GitlabStore.new(store_options)
+  @store ||= Kitchen::Driver::VmpoolStores::GitlabCommitStore.new(store_options)
 end
 
 # creates the number of instances defined in the pool data
 def create_pools
+  @old_store = store.dup
   pools.map do |key, value|
     # convert the requests to vm names
     pools[key]['requests'] = value['requests'].find_all do |req|
-       if hostnames = resolve_vm_name(req)
-         pools[key]['pool_instances'] = value['pool_instances'] + hostnames
-         false
-       else
+       puts "Checking request: #{req}"
+       r = req_obj(req)
+       if r.completed?
+         puts "The request #{req} has completed, getting hostname"
+         hostnames = resolve_vm_name(r)
+         # remove request from pool file by not returning anything
+         # if hostname does not exist but request completed don't update pool
+         if ! hostnames
+           puts "Provisioning seemed to have failed for #{req}"
+           puts "Removing request #{req} from pool #{key}"
+           false
+         else
+           pools[key]['pool_instances'] = value['pool_instances'] + hostnames
+           false
+         end
+       else 
+         # has not completed
+         # keep the request, since it is not finished
+         puts "The request #{req} is still running"
          req
        end
     end
@@ -63,7 +91,8 @@ def create_pools
       pools[key]['requests'] = reqs
     end
   end
-  store.save
+  # prevents updates from occuring when they are not required
+  store.save if store_changed?(@old_store, store)
 end
 
 # @return [Boolean] - true if the host is alive and listening
@@ -107,20 +136,18 @@ end
 
 # @return [Boolean] - true if options are valid
 def valid_options?
-  options['project_id'].to_i > 0 &&
-  options['snippet_id'].to_i > 0
+  options['project_id'].to_i > 0
 end
 
 ## main entry point
 
 OptionParser.new do |opts|
-  opts.program_name = 'create-pool'
   opts.on_head(<<-EOF
 
 Summary: A tool used to create a pool of vra systems
 
   Example:
-     #{__FILE__} -f pool_file.yaml -p 33 -s 103
+     #{__FILE__} -f pool_file.yaml -p 33 -f vmpool
 
   If you wish to store the config in a file, this script will read vmpool_config.yaml
   for the same configs.
@@ -132,9 +159,6 @@ Summary: A tool used to create a pool of vra systems
   end
   opts.on('-p', '--project-id ID', "The gitlab project id") do |c|
     options['project_id'] = c.to_i
-  end
-  opts.on('-s', '--snippet-id ID', "The gitlab project snippet id") do |c|
-    options['snippet_id'] = c.to_i
   end
 
 end.parse!
