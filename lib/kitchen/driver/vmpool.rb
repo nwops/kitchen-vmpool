@@ -32,7 +32,7 @@ module Kitchen
       plugin_version "0.1.1"
 
       default_config :pool_name, 'pool1'
-fg      default_config :state_store, 'file'
+      default_config :state_store, 'file'
       default_config :store_options, {}
       default_config :reuse_instances, false
       default_config :create_command, nil
