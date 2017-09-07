@@ -21,6 +21,8 @@ require 'kitchen'
 require "kitchen/version"
 require 'kitchen/logging'
 require 'kitchen/driver/base'
+require 'kitchen-vmpool/version'
+
 module Kitchen
   module Driver
 
@@ -29,7 +31,7 @@ module Kitchen
     class Vmpool < Kitchen::Driver::Base
       include Kitchen::Logging
 
-      plugin_version "0.1.1"
+      plugin_version KitchenVmpool::VERSION
 
       default_config :pool_name, 'pool1'
       default_config :state_store, 'file'

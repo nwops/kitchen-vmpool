@@ -1,8 +1,9 @@
 # Kitchen::Vmpool
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/kitchen/vmpool`. To experiment with that code, run `bin/console` for an interactive prompt.
+Provides the ability to select a memeber of a pool to use during a kitchen test.  This allows you to instantly startup
+a test instead of waiting for a machine to provision.
 
-TODO: Delete this and the text above, and describe your gem
+Pluggable backend is used for storing pool information. 
 
 ## Installation
 
