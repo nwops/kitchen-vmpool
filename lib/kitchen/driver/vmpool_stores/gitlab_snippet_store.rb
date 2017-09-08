@@ -1,10 +1,8 @@
-require 'gitlab'
-require "kitchen/driver/vmpool_stores/base_store"
-require 'yaml'
+require "kitchen/driver/vmpool_stores/gitlab_base_store"
 module Kitchen
   module Driver
     module VmpoolStores
-      class GitlabSnippetStore < BaseStore
+      class GitlabSnippetStore < GitlabBaseStore
 
         attr_accessor :project_id, :snippet_id
         attr_reader :pool_file

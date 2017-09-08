@@ -1,11 +1,9 @@
-require 'gitlab'
-require "kitchen/driver/vmpool_stores/base_store"
-require 'yaml'
+require "kitchen/driver/vmpool_stores/gitlab_base_store"
 
 module Kitchen
   module Driver
     module VmpoolStores
-      class GitlabCommitStore < BaseStore
+      class GitlabCommitStore < GitlabBaseStore
 
         attr_accessor :project_id
         attr_reader :pool_file, :branch
@@ -14,10 +12,12 @@ module Kitchen
         # @option commit_id [Integer] - the snipppet id in the gitlab project
         # @option pool_file [String] - the snipppet file name
         def initialize(options = nil)
-          options ||= { project_id: nil, pool_file: 'vmpool.yaml'}
+          # there is currently some sort of weird bug in gitlab that prevents us from creating files with a yaml extension
+          # thus we have ranmed the default pool file to vmpool
+          options ||= { "project_id" => nil, "pool_file" => 'vmpool'}
           raise ArgumentError.new("You must pass the project_id option") unless options['project_id'].to_i > 0
           @project_id = options['project_id']  #ie. 89
-          @pool_file = options['pool_file'] || 'vmpool.yaml'
+          @pool_file = options['pool_file'] || 'vmpool'
           @branch = 'master'
         end
 
