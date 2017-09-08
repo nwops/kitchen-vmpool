@@ -5,3 +5,4 @@ base_rhel6_pool:
   instances: 1
   pool_instances: []
   requests: []
+  used_instances: []

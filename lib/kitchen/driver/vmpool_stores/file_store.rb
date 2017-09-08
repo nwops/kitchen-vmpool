@@ -18,7 +18,6 @@ module Kitchen
           {
             pool1: {
               pool_name: pool1,
-              payload_file: pool1_payload.yaml,
               instances: 1,
               pool_instances: [],
               requests: []
