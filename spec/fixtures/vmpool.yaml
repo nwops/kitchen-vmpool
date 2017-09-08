@@ -1,8 +1,6 @@
 ---
 pool1:
-  pool_name: pool1
-  payload_file: base_rhel6_payload.yaml
-  instances: 3
+  size: 3
   pool_instances:
     - vm1
     - vm2

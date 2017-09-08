@@ -18,7 +18,7 @@ module Kitchen
           {
             pool1: {
               pool_name: pool1,
-              instances: 1,
+              size: 1,
               pool_instances: [],
               requests: []
             }
