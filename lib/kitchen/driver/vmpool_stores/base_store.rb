@@ -47,6 +47,10 @@ module Kitchen
         def read_content
           raise NotImplementedError
         end
+
+        def write_content(content = pool_data)
+          raise NotImplementedError
+        end
       end
     end
   end
