@@ -145,6 +145,10 @@ RSpec.describe Kitchen::Driver::Vmpool do
     end
 
     describe 'reuse instances' do
+      before(:each) do
+        vmpool.destroy({hostname: 'vm4'})
+      end
+
       let(:driver_config) do
         {
           :pool_name=>"pool1",
@@ -154,18 +158,50 @@ RSpec.describe Kitchen::Driver::Vmpool do
           :reuse_instances => true,
           :state_store=>"file",
           :destroy_command=>nil,
-          reuse_instances: true
         }
       end
 
       it 'create' do
+        vmpool.create(state)
         vmpool.destroy({hostname: 'vm4'})
         expect(vmpool.create(state)).to match(/vm4/)
+
       end
 
       it 'destroy' do
         expect(vmpool.destroy({hostname: 'vm4'})).to eq('vm4')
+        expect(vmpool.send(:pool)["pool_instances"]).to include('vm4')
       end
+
+    end
+
+  end
+
+  describe 'not reuse instances' do
+    before(:each) do
+      vmpool.destroy({hostname: 'vm4'})
+    end
+
+    let(:driver_config) do
+      {
+          :pool_name=>"pool1",
+          store_options: {
+              pool_file: File.join(fixtures_dir, 'reused_vmpool.yaml')
+          },
+          :reuse_instances => false,
+          :state_store=>"file",
+          :destroy_command=>nil,
+      }
+    end
+
+    it 'create' do
+      expect{vmpool.create(state)}.to raise_error(Kitchen::Driver::PoolMemberNotFound)
+
+    end
+
+    it 'destroy' do
+      expect(vmpool.destroy({hostname: 'vm4'})).to eq('vm4')
+      expect(vmpool.send(:pool)["pool_instances"]).to_not include('vm4')
     end
 
   end
