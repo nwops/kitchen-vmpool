@@ -1,9 +1,8 @@
-require 'yaml'
-require "kitchen/driver/vmpool_stores/base_store"
+require "kitchen/driver/vmpool_stores/file_base_store"
 module Kitchen
   module Driver
     module VmpoolStores
-      class FileStore < BaseStore
+      class FileStore < FileBaseStore
 
         # @option pool_file [String] - the file path that holds the pool information
         def initialize(options = nil)

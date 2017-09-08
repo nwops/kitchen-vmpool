@@ -21,6 +21,8 @@ module Kitchen
           @branch = 'master'
         end
 
+        private
+
         def update(content = nil)
           #info("Updating vmpool data")
           update_file
@@ -34,19 +36,13 @@ module Kitchen
         end
 
         def save
-         # info("Saving vmpool data")
+          # info("Saving vmpool data")
           update_file
           read
         end
 
         def file_exists?(project = project_id, file = pool_file)
           read_content(project, file)
-        end
-
-        private
-
-        def client
-          @client ||= Gitlab.client
         end
 
         def create_file(project = project_id)

@@ -1,55 +1,25 @@
 require 'yaml'
-require 'kitchen/logger'
 require 'kitchen'
-require 'kitchen/logging'
 
 module Kitchen
   module Driver
+    class PoolMemberNotFound < Exception; end
+
     module VmpoolStores
       class BaseStore
-        attr_reader :pool_file, :pool_data
-        include Kitchen::Logging
 
-        def update(content = nil)
-          #info("Updating vmpool data")
-          write_content(content)
-          read
+        # @return [String] - a random host from the list of systems
+        # mark them used so nobody else can use it
+        # @param pool_name [String] - the name of the pool to yank the memeber from
+        def take_pool_member(pool_name)
+          raise NotImplemented
         end
 
-        def create
-          #info("Creating new vmpool data")
-          write_content(base_content)
-          read
-        end
-
-        def read
-          #info("Reading vmpool data")
-          read_content
-        end
-
-        def reread
-          pool_data(true)
-        end
-
-        def save
-          #info("Saving vmpool data")
-          write_content
-          read
-        end
-
-        def pool_data(refresh = false)
-          @pool_data = nil if refresh
-          @pool_data ||= YAML.load(read_content)
-        end
-
-        private
-
-        def read_content
-          raise NotImplementedError
-        end
-
-        def write_content(content = pool_data)
-          raise NotImplementedError
+        # @param name [String] - the hostname to mark not used
+        # @param pool_name [String] - the name of the pool to yank the memeber from
+        # @return Array[String] - list of unused instances
+        def mark_unused(name, pool_name, reuse = false)
+          raise NotImplemented
         end
       end
     end

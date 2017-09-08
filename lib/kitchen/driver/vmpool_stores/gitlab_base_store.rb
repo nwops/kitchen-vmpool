@@ -1,11 +1,17 @@
 require 'gitlab'
-require "kitchen/driver/vmpool_stores/base_store"
+require "kitchen/driver/vmpool_stores/file_base_store"
 require 'yaml'
 
 module Kitchen
   module Driver
     module VmpoolStores
-      class GitlabBaseStore < BaseStore
+      class GitlabBaseStore < FileBaseStore
+
+        private
+
+        def client
+          @client ||= Gitlab.client
+        end
 
       end
     end

@@ -1,6 +1,7 @@
 # Kitchen-Vmpool
 
 ## Unreleased
+ * Major refactor of file based stores
  * changes instances to size
  * removes separate pool_name in vmpool config
  * removes reference too payload_file since it is provider specific

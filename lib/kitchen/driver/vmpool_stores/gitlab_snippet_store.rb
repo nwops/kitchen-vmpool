@@ -18,6 +18,8 @@ module Kitchen
           @pool_file = options['pool_file']
         end
 
+        private
+
         def update(content = nil)
           #info("Updating vmpool data")
           update_snippet
@@ -35,12 +37,6 @@ module Kitchen
           #info("Saving vmpool data")
           update_snippet
           read
-        end
-
-        private
-
-        def client
-          @client ||= Gitlab.client
         end
 
         def snippet_exists?(project = project_id)

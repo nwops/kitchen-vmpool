@@ -170,7 +170,6 @@ RSpec.describe Kitchen::Driver::Vmpool do
 
       it 'destroy' do
         expect(vmpool.destroy({hostname: 'vm4'})).to eq('vm4')
-        expect(vmpool.send(:pool)["pool_instances"]).to include('vm4')
       end
 
     end
@@ -196,12 +195,10 @@ RSpec.describe Kitchen::Driver::Vmpool do
 
     it 'create' do
       expect{vmpool.create(state)}.to raise_error(Kitchen::Driver::PoolMemberNotFound)
-
     end
 
     it 'destroy' do
       expect(vmpool.destroy({hostname: 'vm4'})).to eq('vm4')
-      expect(vmpool.send(:pool)["pool_instances"]).to_not include('vm4')
     end
 
   end

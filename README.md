@@ -1,7 +1,7 @@
 # Kitchen::Vmpool
 
-Ever wished you didn't have to wait for test-kitchen to create a test node?  With vmpool you can create your test nodes
-ahead of time and simply populate the pool with the list of hostnames.  During the create step test kitchen will seclect a member
+Ever wished you didn't have to wait for test-kitchen to create a test node?  With kitchen-vmpool you can create your test nodes
+ahead of time and simply populate the pool with the list of hostnames.  During the create step test kitchen will select a member
 of the test pool and you will instantly have a system to work with.
 
 Kitchen-vmpool allows external scripts or programs to populate the pool so it is not tied to any single vm/container technology.
@@ -116,6 +116,9 @@ windows10_pool:
 ```
 
 The payload_file key is not required and was used for other purposes outside of kitchen-vmpool in order to create the instances.
+It can be expected that some users will throw extra metadata in these pools for their own purposes.  So care must be
+taken to not wipe out this data when creating a store.
+
 ### Puppet's VMpooler
 Consider the VMpooler state store to be the ultimate backend for kitchen-vmpool.  While vmpool doesn't currently support vmpooler
 it is on the roadmap to support. 
@@ -130,7 +133,7 @@ This plugin was intended to support multiple ways to populate the pool and multi
 Therefore we leave it up to the user to create the pool instances while kitchen's job is only to interface with the pool information.
 Pool members need to be created outside of kitchen-vmpool.  Additionally pool member information must also be updated outside of kitchen-vmpool.
 
-Puppet's vmpooler will handle the maintainence of the pool state which is probably what you want.
+Puppet's vmpooler will handle the maintenance of the pool state which is probably what you want.
 
 
 ### Creating a State Store
@@ -139,23 +142,48 @@ In order to create a new state store you must do the following:
 
 1. inherit from the BaseStore or a subclass of the BaseStore
 2. Implement the following methods:
-    * read_content
-    * write_content
     * initialize(options = {}) 
+    * take_pool_member
+    * mark_unused
     
-3. You can optionally re-define the BaseStore methods if they do not meet your needs
-    * update
-    * create
-    * read
-    * reread
-    * save
-    * pool_data
-
 4. All other methods used with your store must be private 
 
 You must be careful to overwrite the entire pool data.  It is expected that some users
 will put other metadata in the pool file for other purposes.  So when you write your data
 please ensure you merge with the previous data first.
+
+Example:
+
+```ruby
+module Kitchen
+  module Driver
+    module VmpoolStores
+      class FileBaseStore < BaseStore
+        # @return [String] - a random host from the list of systems
+        # mark them used so nobody else can use it
+        def take_pool_member(pool_name)
+          member = pool_hosts(pool_name).sample
+          raise Kitchen::Driver::PoolMemberNotFound.new("No pool members exist for #{pool_name}, please create some pool members") unless member
+          mark_used(member, pool_name)
+          return member
+        end
+
+        # @param name [String] - the hostname to mark not used
+        # @return Array[String] - list of unused instances
+        def mark_unused(name, pool_name, reuse = false)
+          if reuse
+            used_hosts(pool_name).delete(name)
+            pool_hosts(pool_name) << name unless pool_hosts(pool_name).include?(name)
+          end
+          save
+          pool_hosts(pool_name)
+        end
+      end
+    end
+  end    
+end
+
+```
 
 ### Adding Configuration for your store
 
