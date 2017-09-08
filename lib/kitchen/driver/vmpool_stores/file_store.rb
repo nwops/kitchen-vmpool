@@ -17,9 +17,9 @@ module Kitchen
         def base_content
           {
             pool1: {
-              pool_name: pool1,
               size: 1,
               pool_instances: [],
+              used_instances: [],
               requests: []
             }
           }
