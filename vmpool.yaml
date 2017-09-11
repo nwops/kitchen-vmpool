@@ -2,7 +2,7 @@
 base_rhel6_pool:
   pool_name: base_rhel6
   payload_file: base_rhel6_payload.json
-  instances: 1
+  size: 1
   pool_instances: []
   requests: []
   used_instances: []

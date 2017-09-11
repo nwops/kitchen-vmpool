@@ -95,8 +95,11 @@ platforms:
         pool_name: windows10_pool      
 ```
 
-### Pool data structure
-The basic structure of the pool data can be found below.  This is the current format that each state store will follow. 
+### File based pool data structure
+File based state stores require a file to store the data.  Duh!  In order to have
+a common format between all the file based state stores you should use the data structure
+below.  If you make your own state store you can do whatever you desire.  All state stores in this gem will use the format
+below.
 
 ```yaml
 base_rhel6_pool:
@@ -115,13 +118,13 @@ windows10_pool:
      
 ```
 
-The payload_file key is not required and was used for other purposes outside of kitchen-vmpool in order to create the instances.
+The `payload_file` key is not required and was used for other purposes outside of kitchen-vmpool in order to create the vra instances.
 It can be expected that some users will throw extra metadata in these pools for their own purposes.  So care must be
-taken to not wipe out this data when creating a store.
+taken to not wipe out this data when creating a new state store.
 
 ### Puppet's VMpooler
 Consider the VMpooler state store to be the ultimate backend for kitchen-vmpool.  While vmpool doesn't currently support vmpooler
-it is on the roadmap to support. 
+it is on the roadmap. 
 
 https://github.com/puppetlabs/vmpooler
 
