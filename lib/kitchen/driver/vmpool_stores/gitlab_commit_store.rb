@@ -21,8 +21,6 @@ module Kitchen
           @branch = 'master'
         end
 
-        private
-
         def update(content = nil)
           #info("Updating vmpool data")
           update_file
@@ -40,6 +38,9 @@ module Kitchen
           update_file
           read
         end
+
+        private
+
 
         def file_exists?(project = project_id, file = pool_file)
           read_content(project, file)

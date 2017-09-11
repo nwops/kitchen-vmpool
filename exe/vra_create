@@ -148,7 +148,7 @@ module VraUtilities
     {
       cpus: template_data['data']['Machine']['data']['cpu'] || 2,
       memory: template_data['data']['Machine']['data']['memory'] || 4096,
-      requested_for: ENV['VRA_USER'] 
+      requested_for: ENV['VRA_USER'],
       lease_days: 2,
       notes: 'VRA Server Pool Test',
       subtenant_id: template_data['businessGroupId']

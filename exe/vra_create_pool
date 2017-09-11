@@ -147,7 +147,7 @@ OptionParser.new do |opts|
 Summary: A tool used to create a pool of vra systems
 
   Example:
-     #{__FILE__} -f pool_file.yaml -p 33 -f vmpool
+     #{File.basename(__FILE__)} -p 33 -f vmpool
 
   If you wish to store the config in a file, this script will read vmpool_config.yaml
   for the same configs.

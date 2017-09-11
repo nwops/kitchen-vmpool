@@ -34,6 +34,33 @@ module Kitchen
           @pool_data ||= YAML.load(read_content)
         end
 
+        def update(content = nil)
+          #info("Updating vmpool data")
+          write_content(content)
+          read
+        end
+
+        def create
+          #info("Creating new vmpool data")
+          write_content(base_content)
+          read
+        end
+
+        def read
+          #info("Reading vmpool data")
+          read_content
+        end
+
+        def reread
+          pool_data(true)
+        end
+
+        def save
+          #info("Saving vmpool data")
+          write_content
+          read
+        end
+
         private
 
         # @return Array[String] - a list of pool names
@@ -71,33 +98,6 @@ module Kitchen
           used_hosts(pool_name) << name unless used_hosts(pool_name).include?(name)
           save
           used_hosts(pool_name)
-        end
-
-        def update(content = nil)
-          #info("Updating vmpool data")
-          write_content(content)
-          read
-        end
-
-        def create
-          #info("Creating new vmpool data")
-          write_content(base_content)
-          read
-        end
-
-        def read
-          #info("Reading vmpool data")
-          read_content
-        end
-
-        def reread
-          pool_data(true)
-        end
-
-        def save
-          #info("Saving vmpool data")
-          write_content
-          read
         end
         
         def read_content

@@ -18,8 +18,6 @@ module Kitchen
           @pool_file = options['pool_file']
         end
 
-        private
-
         def update(content = nil)
           #info("Updating vmpool data")
           update_snippet
@@ -38,6 +36,8 @@ module Kitchen
           update_snippet
           read
         end
+
+        private
 
         def snippet_exists?(project = project_id)
           return false unless snippet_id
