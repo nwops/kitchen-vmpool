@@ -1,7 +1,8 @@
 # Kitchen-Vmpool
 
-## Unreleased
-
+## v0.3.1
+ * Ensures CRUD methods are public
+ 
 ## v0.3.0
  * Major refactor of file based stores
  * changes instances to size
