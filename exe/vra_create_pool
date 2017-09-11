@@ -83,6 +83,9 @@ def create_pools
     # return the alive instances and save to the pool
     pools[key]['pool_instances'] = pools[key]['pool_instances'].find_all {|h| is_alive?(h) }
 
+    # delete any old instances from used pool
+    pools[key]['used_instances'] = pools[key]['used_instances'].find_all {|h| is_alive?(h) }
+
     # create the pool, and save the request in the requests
     # do not create if the number of systems and requests are more than the requested amount
     current_total = value['pool_instances'].count + pools[key]['requests'].count
