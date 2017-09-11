@@ -52,9 +52,9 @@ module Kitchen
         return if state[:hostname].nil?
         store.mark_unused(state[:hostname], config[:pool_name], config[:reuse_instances])
         if config[:reuse_instances]
-          info("Marking pool member #{name} as unused")
+          info("Marking pool member #{state[:hostname]} as unused")
         else
-          info("Marking pool member #{name} as used")
+          info("Marking pool member #{state[:hostname]} as used")
         end
         state.delete(:hostname)
       end
