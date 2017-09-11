@@ -1,5 +1,11 @@
 # Kitchen-Vmpool
 
+## Unreleased
+
+## v0.3.2
+ * Destroy process does not output correct hostname
+ * Delete old instances from used_instances pool
+
 ## v0.3.1
  * Ensures CRUD methods are public
  
