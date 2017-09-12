@@ -7,6 +7,8 @@ of the test pool and you will instantly have a system to work with.
 Kitchen-vmpool allows external scripts or programs to populate the pool so it is not tied to any single vm/container technology.
 Additionaly, kitchen-vmpool contains a pluggable storage backend so that you can store the pool information in just about anything. 
 
+Increase your perceived test kitchen host creation time by 200x!
+
 ## Installation
 
 
@@ -26,11 +28,39 @@ Or install it yourself as:
 
 To use setup the kitchen driver to use the vmpool store and configure one of the stores if required. 
 
+## Intro
+### Adding members to the pool
+Kitchen-vmpool is agnostic to any vm/container technology.  This means you can use whatever provisioning mechanism you need to create a system or container.
+However, it is expected that you will be provisioning hosts outside of your normal test-kitchen workflow.  
+So all those cool fancy kitchen driver plugins cannot be used with vmpool.  But if you are reading this, that means your drivers take too long to spin up
+an instance anyways.  So this means that you will need an external process that spins up instances.
+
+In fact there is a tool that helps immensely with this already: [VMPooler](https://github.com/puppetlabs/vmpooler)
+
+As I mentioned about you can use vmpooler or create a script to initially and constly generate your pool members.
+Expect a scheduled/cron job to constant keep pool members in the pool. 
+
+An example working script I created for usage with VMware VRA can be found in the exe folder of this gem.  However, I will
+later be transitioning to [VMPooler](https://github.com/puppetlabs/vmpooler).
+
+### State Stores
+When we are working with vmpools we need a way to store metadata about that pools and how many instances are required and currently available for each pool.  The easiest way to do this at first is to put that data in a file.
+However, most people need things like central locking and management layers in front of that data.  So Kitchen-vmpool creates a framework for many other
+state stores to be used.  Vmpool even allows the user to create their own state store and package as a separate gem.  
+Test kitchen will use these state stores to get members of the pools in order to test against. 
+
+Kitchen-vmpool creates your hosts really fast simply because all the hostnames are cached ahead of time.  
+
+Increase your perceived test kitchen host creation time by 200x
+
+## Currently Available State stores
+
 ### Gitlab Commit Store Example
 If you have no central place to store files the gitlab_commit store may be an option for you.
-If you have a simple setup thus may suffice.  If you plan to expand your usage of test kitchen to 
+If you have a simple setup this may suffice.  If you plan to expand your usage of test kitchen to 
 include multiple parallel test runs, you may run into race conditions due to the lack of a central queue
 to handle reads and writes.  Perfect for simple setups.  Later on you can move to a different state store.
+Due to a gitlab bug I recommend naming your file without a file extension.
 
 ```yaml
 driver:
@@ -54,7 +84,8 @@ platforms:
 ### Gitlab Snippet Store Example
 I don't recommend using the snippet store because gitlab's permission's model only allows a single
 user to make changes.  Therefore this is a bad central place to keep things if only a single user can update.
-Use this as an example to create your own store providers.
+Use this as an example to create your own store providers.  This originally sounded like a good idea, but later turned out
+to be bad idea due to the permissions model in Gitlab. 
 
 ```yaml
 driver:
@@ -122,7 +153,7 @@ The `payload_file` key is not required and was used for other purposes outside o
 It can be expected that some users will throw extra metadata in these pools for their own purposes.  So care must be
 taken to not wipe out this data when creating a new state store.
 
-### Puppet's VMpooler
+## Puppet's VMpooler
 Consider the VMpooler state store to be the ultimate backend for kitchen-vmpool.  While vmpool doesn't currently support vmpooler
 it is on the roadmap. 
 
@@ -194,14 +225,85 @@ You can pass configuration to your store by setting the `store_options` in the d
 that allows the user to pass in required settings if your store requires configuration.  It is up to you
 use these options since not every store will require configuration.
 
+### Custom State Store Distrubtion
+If you think many will benefit from your new state store please create a PR and have it merged to the kithen-vmpool core.
+We want to limit dependencies so if your fancy state store has some dependencies it would probably be best to create your own gem.
+
+It is easiest to create a gem using bundler.  Please use the naming convention kitchen-vmpool-storename when creating your gem. 
+ 
+1. `bundler gem --test=rspec kitchen-vmpool-fancystore` 
+2. Create a kitchen/driver directory
+3. Move the vmpool directory underneath kitchen/driver directory
+
+```
+lib
+└── kitchen
+    └── driver
+        └── vmpool
+            ├── fancystore
+            │   └── version.rb
+            └── fancystore.rb --> your code goes in this file
+
+```
+
+There is much more to bundling this into a gem but the procedures are the same for every gem.  So add gem dependencies if required
+and be sure to add unit tests for your state store.
 
 ### Development Setup
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
+
+## VMware VRA Pool creation scripts
+I had a need to interface kitchen-vmpool with VRA in order to build catalog items.  So I ended up creating some basic scripts that utilize the [vmware-vra gem](https://github.com/chef-partners/vmware-vra-gem)
+to help build the catalog items.  I am also using the gitlab_commit store as my storage backend.  Don't ask why it is all I had.
+
+Warning: this code is very custom for my own needs and utilizes the gitlab_commit store for state storage.  
+
+### Usage
+
+Gems required:
+ - hashdiff
+ - vmware-vra
+ - gitlab
+ - highline
+ 
+Help: `vra_create_pool -h` 
+Create a pool: `vra_create_pool -f vmpool -p 1234`
+
+Requires the basic file based vmpool file
+
+```yaml
+base_rhel6_pool:
+  payload_file: base_rhel6_payload.json
+  size: 1
+  pool_instances: []
+  requests: []
+  used_instances: []
+
+```
+
+I have some PRs open to help make using VRA payloads files easier with vmware-vra easier
+
+See: 
+  - https://github.com/chef-partners/vmware-vra-gem/pull/57
+  - https://github.com/chef-partners/vmware-vra-gem/pull/56
+  
+You should be able to easily swap out the store for something else too.  Just edit the vra_create_pool file here.
+
+```ruby
+# @return [Hash] - a store hash that contains one or more pools
+# @option project_id [Integer] - the project id in gitlab
+# @option pool_file [String] - the snipppet file name
+def store(store_options = options)
+  # create a new instance of the store with the provided options
+  @store ||= Kitchen::Driver::VmpoolStores::GitlabCommitStore.new(store_options)
+end
+
+```
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/logicminds/kitchen-vmpool. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/nwops/kitchen-vmpool. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 
