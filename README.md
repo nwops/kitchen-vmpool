@@ -283,7 +283,7 @@ base_rhel6_pool:
 
 ```
 
-I have some PRs open to help make using VRA payloads files easier with vmware-vra easier
+I have some PRs open to help make using VRA payloads files easier with vmware-vra.
 
 See: 
   - https://github.com/chef-partners/vmware-vra-gem/pull/57
