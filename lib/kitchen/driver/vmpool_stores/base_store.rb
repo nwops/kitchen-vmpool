@@ -4,6 +4,14 @@ require 'kitchen'
 module Kitchen
   module Driver
     class PoolMemberNotFound < Exception; end
+    class PoolNotFound < Exception; end
+    class PoolIsEmpty < Exception; end
+    class PoolMemberUnavailable < Exception; end
+    class TokenNotCreated < Exception; end
+    class AuthenticationRequired < Exception; end
+    class InvalidCredentials < Exception; end
+    class PoolMemberNotDestroyed < Exception; end
+    class InvalidUrl < Exception; end
 
     module VmpoolStores
       class BaseStore
@@ -19,10 +27,11 @@ module Kitchen
           raise NotImplemented
         end
 
-        # @param name [String] - the hostname to mark not used
-        # @param pool_name [String] - the name of the pool to yank the memeber from
-        # @return Array[String] - list of unused instances
-        def mark_unused(name, pool_name, reuse = false)
+        # @param pool_member [String] - the name of the VM
+        # @param pool_name [String] - the name of the pool
+        # @param reuse_instances [Boolean] - whether or not the VM should be discarded when used
+        # a callback that executes when a pool member has been run
+        def cleanup(pool_member: nil, pool_name: nil, reuse_instances: false, &block)
           raise NotImplemented
         end
       end

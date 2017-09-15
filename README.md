@@ -1,4 +1,4 @@
-# Kitchen::Vmpool
+# Kitchen-Vmpool
 
 Ever wished you didn't have to wait for test-kitchen to create a test node?  With kitchen-vmpool you can create your test nodes
 ahead of time and simply populate the pool with the list of hostnames.  During the create step test kitchen will select a member
@@ -122,11 +122,37 @@ platforms:
         pool_name: windows10_pool      
 ```
 
+### Vmpooler store
+Consider the Vmpooler state store to be the ultimate backend for kitchen-vmpool. You can now setup
+[vmpooler](https://github.com/puppetlabs/vmpooler) to continuously regenerate virtual machines in the background.
+
+```yaml
+driver:
+  name: vmpool
+  state_store: vmpooler
+  store_options:
+    user: 'jdoe'
+    pass: 'jdoe123'
+    token: 'token'
+    host_url: 'http://localhost:8080'
+platforms:
+    - name: rhel6
+      driver:
+        pool_name: base_rhel6_pool
+    - name: windows10
+      driver:
+        pool_name: windows10_pool      
+```
+
+You will notice that the `reuse_instances` and `pool_file` options are not needed in this driver config. However,
+we do need to supply some new options. Vmpooler store relies on an external service, so we need to provide an address
+(`host_url`) and authentication credentials (`token` or `user` and `pass`).
+
 ### File based pool data structure
 File based state stores require a file to store the data.  Duh!  In order to have
 a common format between all the file based state stores you should use the data structure
-below.  If you make your own state store you can do whatever you desire.  All state stores in this gem will use the format
-below.
+below.  If you make your own state store you can do whatever you desire.  All state stores in this gem will use the
+format below.
 
 ```yaml
 base_rhel6_pool:
@@ -149,13 +175,6 @@ The `payload_file` key is not required and was used for other purposes outside o
 It can be expected that some users will throw extra metadata in these pools for their own purposes.  So care must be
 taken to not wipe out this data when creating a new state store.
 
-## Puppet's VMpooler
-Consider the VMpooler state store to be the ultimate backend for kitchen-vmpool.  While vmpool doesn't currently support vmpooler
-it is on the roadmap.
-
-https://github.com/puppetlabs/vmpooler
-
-Once the vmpooler state store is implemented this kitchen plugin might be pretty popular.
 
 ## Development
 
@@ -170,13 +189,13 @@ Puppet's vmpooler will handle the maintenance of the pool state which is probabl
 
 In order to create a new state store you must do the following:
 
-1. inherit from the BaseStore or a subclass of the BaseStore
+1. Inherit from the BaseStore or a subclass of the BaseStore
 2. Implement the following methods:
     * initialize(options = {})
     * take_pool_member
-    * mark_unused
-
-4. All other methods used with your store must be private
+    * cleanup
+    
+3. All other methods used with your store must be private 
 
 You must be careful to overwrite the entire pool data.  It is expected that some users
 will put other metadata in the pool file for other purposes.  So when you write your data
@@ -197,16 +216,19 @@ module Kitchen
           mark_used(member, pool_name)
           return member
         end
+        
+        # @param pool_member [String] a VM instance
+        # @param pool_name [String] a VM pool
+        # @param reuse_instances [Boolean] whether or not to mark used VM instances as unused
+        def cleanup(pool_member:, pool_name:, reuse_instances:, &block)
+          used_status = 'used'
 
-        # @param name [String] - the hostname to mark not used
-        # @return Array[String] - list of unused instances
-        def mark_unused(name, pool_name, reuse = false)
-          if reuse
-            used_hosts(pool_name).delete(name)
-            pool_hosts(pool_name) << name unless pool_hosts(pool_name).include?(name)
+          if reuse_instances
+            mark_unused(pool_member, pool_name)
+            used_status = 'unused'
           end
-          save
-          pool_hosts(pool_name)
+
+          block.call(pool_member, used_status)
         end
       end
     end

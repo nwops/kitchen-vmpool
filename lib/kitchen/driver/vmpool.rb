@@ -49,13 +49,18 @@ module Kitchen
 
       # (see Base#destroy)
       def destroy(state)
-        return if state[:hostname].nil?
-        store.mark_unused(state[:hostname], config[:pool_name], config[:reuse_instances])
-        if config[:reuse_instances]
-          info("Marking pool member #{state[:hostname]} as unused")
-        else
-          info("Marking pool member #{state[:hostname]} as used")
+        return unless state[:hostname]
+
+        opts = {
+            pool_member: state[:hostname],
+            pool_name: config[:pool_name],
+            reuse_instances: config[:reuse_instances],
+        }
+
+        store.cleanup(**opts) do |host, used_status|
+          info("Marking pool member #{host} as #{used_status}")
         end
+
         state.delete(:hostname)
       end
 
@@ -79,7 +84,6 @@ module Kitchen
           klass.send(:new, store_opts)
         end
       end
-
     end
   end
 end
