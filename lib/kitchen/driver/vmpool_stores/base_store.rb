@@ -8,6 +8,10 @@ module Kitchen
     module VmpoolStores
       class BaseStore
 
+        def initialize(options = {})
+          
+        end
+
         # @return [String] - a random host from the list of systems
         # mark them used so nobody else can use it
         # @param pool_name [String] - the name of the pool to yank the memeber from

@@ -49,10 +49,6 @@ However, most people need things like central locking and management layers in f
 state stores to be used.  Vmpool even allows the user to create their own state store and package as a separate gem.  
 Test kitchen will use these state stores to get members of the pools in order to test against.
 
-Kitchen-vmpool creates your hosts really fast simply because all the hostnames are cached ahead of time.  
-
-Increase your perceived test kitchen host creation time by 200x
-
 ## Currently Available State stores
 
 ### Gitlab Commit Store Example
