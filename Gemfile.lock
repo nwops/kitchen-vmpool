@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    kitchen-vmpool (0.3.2)
+    kitchen-vmpool (0.4.0)
       gitlab (~> 4.2)
 
 GEM
