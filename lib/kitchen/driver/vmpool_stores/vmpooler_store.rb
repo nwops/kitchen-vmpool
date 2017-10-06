@@ -1,5 +1,6 @@
 require 'net/http'
 require 'timeout'
+require 'json'
 require_relative 'base_store'
 
 module Kitchen
@@ -35,7 +36,9 @@ module Kitchen
 
         # @param pool_member [String] the pool member to destroy
         def cleanup(pool_member:, pool_name: nil, reuse_instances: false)
+          used_status = 'destroyed'
           destroy_pool_member(pool_member)
+          yield(pool_member, used_status) if block_given?
         end
 
         private

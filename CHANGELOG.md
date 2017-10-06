@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.4.0
+ * Adds vmpooler store for the ultimate in pool stores
+
 ## v0.3.2
  * Destroy process does not output correct hostname
  * Delete old instances from used_instances pool

@@ -1,0 +1,30 @@
+---
+
+# Example kitchen file configured to use vmpooler
+# if using this please ensure you have vmpooler running on localhost:8080
+# You can start a dummy instance via docker
+# docker run -e VMPOOLER_DEBUG=true -p 8080:4567 \
+#  -e VMPOOLER_LOG='/var/log/vmpooler/vmpooler.log' -it --rm --name pooler nwops/vmpooler
+driver:
+  name: vmpool
+  state_store: vmpooler
+  store_options:
+    user: 'jdoe'
+    pass: 'jdoe123'
+    token: 'token'
+    host_url: 'http://localhost:8080'
+platforms:
+    - name: debian-7-x86_64
+      driver:
+        pool_name: debian-7-x86_64
+    - name: debian-7-i386
+      driver:
+        pool_name: debian-7-i386
+
+provisioner:
+  name: shell
+
+suites:
+  - name: default
+    run_list:
+    attributes:

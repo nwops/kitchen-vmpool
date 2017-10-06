@@ -144,9 +144,16 @@ platforms:
         pool_name: windows10_pool      
 ```
 
-You will notice that the `reuse_instances` and `pool_file` options are not needed in this driver config. However,
-we do need to supply some new options. Vmpooler store relies on an external service, so we need to provide an address
+You will notice that the `reuse_instances` and `pool_file` options are not needed in this driver config. However, we do need to supply some new options. The vmpooler store relies on an external service, so we need to provide an address
 (`host_url`) and authentication credentials (`token` or `user` and `pass`).
+
+For the platforms you will want to supply the pool_name that matches with your vmpooler's pools.
+
+You can create a test dummy instance of vmpooler to play around with:
+
+`docker run -e VMPOOLER_DEBUG=true -p 8080:4567  -e VMPOOLER_LOG='/var/log/vmpooler/vmpooler.log' -it --rm --name pooler nwops/vmpooler`
+
+Vmpooler should start running on http://localhost:8080
 
 ### File based pool data structure
 File based state stores require a file to store the data.  Duh!  In order to have
@@ -194,8 +201,8 @@ In order to create a new state store you must do the following:
     * initialize(options = {})
     * take_pool_member
     * cleanup
-    
-3. All other methods used with your store must be private 
+
+3. All other methods used with your store must be private
 
 You must be careful to overwrite the entire pool data.  It is expected that some users
 will put other metadata in the pool file for other purposes.  So when you write your data
@@ -216,7 +223,7 @@ module Kitchen
           mark_used(member, pool_name)
           return member
         end
-        
+
         # @param pool_member [String] a VM instance
         # @param pool_name [String] a VM pool
         # @param reuse_instances [Boolean] whether or not to mark used VM instances as unused

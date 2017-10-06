@@ -22,15 +22,14 @@ module Kitchen
         # @param pool_member [String] a VM instance
         # @param pool_name [String] a VM pool
         # @param reuse_instances [Boolean] whether or not to mark used VM instances as unused
-        def cleanup(pool_member:, pool_name:, reuse_instances:, &block)
+        def cleanup(pool_member:, pool_name:, reuse_instances:)
           used_status = 'used'
 
           if reuse_instances
             mark_unused(pool_member, pool_name)
             used_status = 'unused'
           end
-
-          block.call(pool_member, used_status)
+          yield(pool_member, used_status) if block_given?
         end
 
         def pool_data(refresh = false)
@@ -113,7 +112,7 @@ module Kitchen
         def used_hosts(pool_name)
           pool(pool_name)['used_instances'] ||= []
         end
-        
+
         def read_content
           raise NotImplementedError
         end
