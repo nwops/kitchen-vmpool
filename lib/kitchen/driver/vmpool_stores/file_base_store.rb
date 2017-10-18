@@ -23,7 +23,7 @@ module Kitchen
         # @param pool_name [String] a VM pool
         # @param reuse_instances [Boolean] whether or not to mark used VM instances as unused
         def cleanup(pool_member:, pool_name:, reuse_instances:)
-          used_status = 'used'
+          used_status = 'garbage'
           if reuse_instances
             mark_unused(pool_member, pool_name)
             used_status = 'unused'
