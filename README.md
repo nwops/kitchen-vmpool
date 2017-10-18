@@ -233,6 +233,8 @@ module Kitchen
           if reuse_instances
             mark_unused(pool_member, pool_name)
             used_status = 'unused'
+          else
+            add_to_garbage(pool_member, pool_name)
           end
 
           block.call(pool_member, used_status)
