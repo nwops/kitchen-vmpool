@@ -28,6 +28,8 @@ module Kitchen
           if reuse_instances
             mark_unused(pool_member, pool_name)
             used_status = 'unused'
+          else
+            add_to_garbage(pool_member, pool_name)
           end
           yield(pool_member, used_status) if block_given?
         end
@@ -66,6 +68,13 @@ module Kitchen
 
         private
 
+        # @param pool_member [String]
+        def add_to_garbage(pool_member, pool_name)
+          pool(pool_name)['garbage_collection'] ||= []
+          pool(pool_name)['garbage_collection'] << pool_member
+          save
+        end
+
         # @param name [String] - the hostname to mark used
         # @return Array[String] - list of used instances
         def mark_used(name, pool_name)
@@ -85,7 +94,6 @@ module Kitchen
           save
           pool_hosts(pool_name)
         end
-
 
         # @return Array[String] - a list of pool names
         def pool_names

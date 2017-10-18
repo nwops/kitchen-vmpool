@@ -90,13 +90,15 @@ RSpec.describe Kitchen::Driver::Vmpool do
       expect(pool_data['used_instances'].count).to be > before
     end
 
-    it 'destroy and not resuable' do
-      member = vmpool.create(state)
-      expect(pool_data['pool_instances']).to_not include(member)
-      driver_config.merge({reuse_instances: false})
-      vmpool.destroy({hostname: member})
-      expect(pool_data['pool_instances']).to_not include(member)
-      expect(pool_data['used_instances']).to include(member)
+    context 'destroy and not resuable' do
+      it 'adds used instances to the garbage collection' do
+        member = vmpool.create(state)
+        expect(pool_data['pool_instances']).to_not include(member)
+        driver_config.merge({reuse_instances: false})
+        vmpool.destroy({hostname: member})
+        expect(pool_data['used_instances']).to include(member)
+        expect(pool_data['garbage_collection']).to include(member)
+      end
     end
 
     describe 'reusable' do
