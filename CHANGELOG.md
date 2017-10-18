@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.5.0
+ * Fixes #4 - add ability to put systems in garbage collection array for pool
+ * Refactor test code
 ## 0.4.0
  * Adds vmpooler store for the ultimate in pool stores
 
