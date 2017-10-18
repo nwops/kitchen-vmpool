@@ -24,11 +24,11 @@ module Kitchen
         # @param reuse_instances [Boolean] whether or not to mark used VM instances as unused
         def cleanup(pool_member:, pool_name:, reuse_instances:)
           used_status = 'used'
-
           if reuse_instances
             mark_unused(pool_member, pool_name)
             used_status = 'unused'
           else
+            used_hosts(pool_name).delete(pool_member)
             add_to_garbage(pool_member, pool_name)
           end
           yield(pool_member, used_status) if block_given?
@@ -40,19 +40,16 @@ module Kitchen
         end
 
         def update(content = nil)
-          #info("Updating vmpool data")
           write_content(content)
           read
         end
 
         def create
-          #info("Creating new vmpool data")
           write_content(base_content)
           read
         end
 
         def read
-          #info("Reading vmpool data")
           read_content
         end
 
@@ -61,7 +58,6 @@ module Kitchen
         end
 
         def save
-          #info("Saving vmpool data")
           write_content
           read
         end
@@ -69,10 +65,12 @@ module Kitchen
         private
 
         # @param pool_member [String]
+        # @return Array[String] - list of instances in the garbage
         def add_to_garbage(pool_member, pool_name)
-          pool(pool_name)['garbage_collection'] ||= []
-          pool(pool_name)['garbage_collection'] << pool_member
+          return if garbage_hosts(pool_name).include?(pool_member)
+          garbage_hosts(pool_name) << pool_member
           save
+          garbage_hosts(pool_name)
         end
 
         # @param name [String] - the hostname to mark used
@@ -114,6 +112,10 @@ module Kitchen
         # @return Array[String] - a list of host names in the pool
         def pool_hosts(pool_name)
           pool(pool_name)['pool_instances'] ||= []
+        end
+
+        def garbage_hosts(pool_name)
+          pool(pool_name)['garbage_collection'] ||= []
         end
 
         # @return Array[String] - a list of used host names in the pool
