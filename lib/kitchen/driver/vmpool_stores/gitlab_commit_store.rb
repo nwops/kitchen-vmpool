@@ -68,6 +68,8 @@ module Kitchen
         def read_content(project = project_id, file = pool_file)
           begin
             client.file_contents(project, file, branch)
+          rescue Gitlab::Error::Unauthorized => e
+            raise Kitchen::Driver::InvalidCredentials.new("Unauthorized, missing or invalid gitlab token")
           rescue Gitlab::Error::NotFound
             false
           end
