@@ -17,7 +17,8 @@ RSpec.describe 'vmpooler store' do
             user: user,
             pass: pass,
             token: token,
-            host_url: host_url
+            host_url: host_url,
+            ssl_verify: false
         },
     }
   end

@@ -1,13 +1,16 @@
 require 'net/http'
 require 'timeout'
+require 'openssl'
+require 'uri'
 require 'json'
 require_relative 'base_store'
+require 'https'
 
 module Kitchen
   module Driver
     module VmpoolStores
       class VmpoolerStore < BaseStore
-        attr_reader :vmpooler_url, :token, :tags, :lifetime
+        attr_reader :vmpooler_url, :token, :tags, :lifetime, :ssl_verify, :ssl_cert
 
         # @param [Hash] opts
         # @option opts [String] :host_url The hostname to use in http requests.
@@ -21,11 +24,13 @@ module Kitchen
           user = opts.fetch('user', nil)
           pass = opts.fetch('pass', nil)
           token = opts.fetch('token', nil)
+          @ssl_cert = opts.fetch('ssl_cert', nil)
           @tags = opts.fetch('tags', { purpose: 'vmpooler-default' })
           @lifetime = opts.fetch('lifetime', nil)
           @vmpooler_url = URI.join(host_url, '/api/v1/').to_s
           raise Kitchen::Driver::InvalidUrl.new("Bad url: #{vmpooler_url}") unless valid_url?(URI.join(vmpooler_url, 'vm'))
           @token = valid_token?(token) ? token : create_token(user, pass)
+          @ssl_verify = opts.fetch('ssl_verify', true)
         end
 
         # @param pool_name [String] the pool to take from
@@ -42,6 +47,22 @@ module Kitchen
         end
 
         private
+
+        # @return [Hash] - returns hash of frequently used http options
+        # @param uri [URI] - the uri to be api call
+        def request_options(uri)
+          {
+            use_ssl: uri.scheme == 'https',
+            ssl_version: :SSLv3
+            verify_mode: @ssl_verify ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
+            ca_file: ca_cert_file
+          }
+        end
+
+        # @return [String] - the expanded path to the ca cert file, nil if not provided
+        def ca_cert_file
+          File.expand_path(@ssl_cert) if !@ssl_cert.nil? || !@ssl_cert.empty?
+        end
 
         # @param token [String] the token to validate
         # @return [true] if the token url is valid
@@ -71,11 +92,8 @@ module Kitchen
           uri = URI.join(vmpooler_url, 'vm/', pool_member)
           request = Net::HTTP::Delete.new(uri)
           request.add_field('X-AUTH-TOKEN', token)
-
-          req_options = {
-              use_ssl: uri.scheme == 'https',
-          }
-
+          req_options = request_options(uri) 
+          
           response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
             http.request(request)
           end
@@ -97,11 +115,7 @@ module Kitchen
           uri = URI.join(vmpooler_url, 'token')
           request = Net::HTTP::Post.new(uri)
           request.basic_auth(user, pass)
-
-          req_options = {
-              use_ssl: uri.scheme == 'https',
-          }
-
+          req_options = request_options(uri) 
           response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
             http.request(request)
           end
@@ -119,11 +133,7 @@ module Kitchen
           request = Net::HTTP::Post.new(uri)
           request.body = JSON.dump({ pool_name => number_of_vms.to_s })
           request.add_field('X-AUTH-TOKEN', token)
-
-          req_options = {
-              use_ssl: uri.scheme == 'https',
-          }
-
+          req_options = request_options(uri) 
           response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
             http.request(request)
           end
