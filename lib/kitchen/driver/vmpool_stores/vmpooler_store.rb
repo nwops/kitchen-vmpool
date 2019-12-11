@@ -4,7 +4,6 @@ require 'openssl'
 require 'uri'
 require 'json'
 require_relative 'base_store'
-require 'https'
 
 module Kitchen
   module Driver
@@ -53,15 +52,21 @@ module Kitchen
         def request_options(uri)
           {
             use_ssl: uri.scheme == 'https',
-            ssl_version: :SSLv3
-            verify_mode: @ssl_verify ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
+            ssl_version: :SSLv3,
+            verify_mode: verify_mode(uri),
             ca_file: ca_cert_file
           }
         end
 
+        # @return [Constant] - the verification mode to use
+        def verify_mode(uri)
+          return OpenSSL::SSL::VERIFY_NONE if uri.scheme == 'https'
+          @ssl_verify ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
+        end
+
         # @return [String] - the expanded path to the ca cert file, nil if not provided
         def ca_cert_file
-          File.expand_path(@ssl_cert) if !@ssl_cert.nil? || !@ssl_cert.empty?
+          File.expand_path(@ssl_cert) unless @ssl_cert.nil? || @ssl_cert.empty?
         end
 
         # @param token [String] the token to validate
@@ -91,7 +96,7 @@ module Kitchen
         def destroy_pool_member(pool_member)
           uri = URI.join(vmpooler_url, 'vm/', pool_member)
           request = Net::HTTP::Delete.new(uri)
-          request.add_field('X-AUTH-TOKEN', token)
+          request.add_field('X-AUTH-TOKEN', token) if token
           req_options = request_options(uri) 
           
           response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
@@ -112,6 +117,9 @@ module Kitchen
         # @raise [InvalidCredentials] if the http response code is 401
         # @raise [TokenNotCreated] if the http response code is otherwise not 200
         def create_token(user, pass)
+          if user.nil? || user.empty?
+            return nil 
+          end
           uri = URI.join(vmpooler_url, 'token')
           request = Net::HTTP::Post.new(uri)
           request.basic_auth(user, pass)
@@ -132,7 +140,7 @@ module Kitchen
           uri = URI.join(vmpooler_url, 'vm')
           request = Net::HTTP::Post.new(uri)
           request.body = JSON.dump({ pool_name => number_of_vms.to_s })
-          request.add_field('X-AUTH-TOKEN', token)
+          request.add_field('X-AUTH-TOKEN', token) if token
           req_options = request_options(uri) 
           response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
             http.request(request)
