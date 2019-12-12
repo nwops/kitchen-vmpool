@@ -26,6 +26,7 @@ module Kitchen
           @ssl_cert = opts.fetch('ssl_cert', nil)
           @tags = opts.fetch('tags', { purpose: 'vmpooler-default' })
           @lifetime = opts.fetch('lifetime', nil)
+          raise ArgumentError, "Invalid host_url: #{host_url}" if host_url.nil? 
           @vmpooler_url = URI.join(host_url, '/api/v1/').to_s
           raise Kitchen::Driver::InvalidUrl.new("Bad url: #{vmpooler_url}") unless valid_url?(URI.join(vmpooler_url, 'vm'))
           @token = valid_token?(token) ? token : create_token(user, pass)
@@ -104,9 +105,11 @@ module Kitchen
           end
 
           case
+          when response.code == '200'
+            "#{pool_member} successfully destroyed"
           when response.code == '404'
             raise Kitchen::Driver::PoolMemberNotFound.new("Pool member #{pool_member} was not found")
-          when response.code != '200'
+          else 
             raise Kitchen::Driver::PoolMemberNotDestroyed.new("Error destroying pool member: code #{response.code}, message #{response.body}")
           end
         end
