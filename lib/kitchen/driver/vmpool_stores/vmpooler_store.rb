@@ -152,7 +152,7 @@ module Kitchen
           case response.code
           when '200'
             data = JSON.parse(response.body)
-            data[pool_name]['hostname']
+            "#{data[pool_name]['hostname']}.#{data[pool_name]['domain']}"
           when '503'
             msg = "Pool #{pool_name} does not have enough active pool members, please try later."
             raise Kitchen::Driver::PoolMemberUnavailable.new(msg)
