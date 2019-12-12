@@ -95,11 +95,12 @@ module Kitchen
         # @raise [PoolMemberNotFound] if the pool member was not found
         # @raise [PoolMemberNotDestroyed] if the pool member was not destroyed
         def destroy_pool_member(pool_member)
+          return true if destroyed?(pool_member)
+
           uri = URI.join(vmpooler_url, 'vm/', pool_member)
           request = Net::HTTP::Delete.new(uri)
           request.add_field('X-AUTH-TOKEN', token) if token
           req_options = request_options(uri) 
-          
           response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
             http.request(request)
           end
@@ -111,6 +112,38 @@ module Kitchen
             raise Kitchen::Driver::PoolMemberNotFound.new("Pool member #{pool_member} was not found")
           else 
             raise Kitchen::Driver::PoolMemberNotDestroyed.new("Error destroying pool member: code #{response.code}, message #{response.body}")
+          end
+        end
+
+        def vm_status(vm)
+          vm_metadata(vm).fetch('state', nil)
+        end
+
+        def destroyed?(vm)
+          vm_status(vm).eql?('destroyed')
+        end
+
+        def online?(vm)
+          ! vm_status(vm).eql?('destroyed')
+        end
+
+        def vm_metadata(vm)
+          uri = URI.join(vmpooler_url, 'vm/', vm)
+          request = Net::HTTP::Get.new(uri)
+          request.add_field('X-AUTH-TOKEN', token) if token
+          req_options = request_options(uri) 
+          response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
+            http.request(request)
+          end
+          case response.code
+          when '200'
+            JSON.parse(response.body).fetch(vm, {})
+          when '503'
+            raise Kitchen::Driver::PoolMemberUnavailable.new(msg)
+          when '404'
+            raise Kitchen::Driver::PoolMemberNotFound.new("VM #{vm} was not found")
+          else
+            raise Exception.new("Error: code #{response.code}, message #{response.body}")
           end
         end
 
